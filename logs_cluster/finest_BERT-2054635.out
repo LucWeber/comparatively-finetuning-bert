@@ -1,0 +1,31 @@
+DEVICE FOUND: cuda
+EPOCH NO: 1
+	Train Loss: 0.317 | Train Accuracy: 85.76%
+	Test Loss:  0.222 | Test Accuracy:  90.89%
+EPOCH NO: 2
+	Train Loss: 0.150 | Train Accuracy: 94.38%
+	Test Loss:  0.235 | Test Accuracy:  91.20%
+EPOCH NO: 3
+	Train Loss: 0.048 | Train Accuracy: 98.48%
+	Test Loss:  0.295 | Test Accuracy:  90.89%
+EPOCH NO: 4
+	Train Loss: 0.021 | Train Accuracy: 99.34%
+	Test Loss:  0.415 | Test Accuracy:  90.61%
+EPOCH NO: 5
+	Train Loss: 0.016 | Train Accuracy: 99.54%
+	Test Loss:  0.361 | Test Accuracy:  90.53%
+EPOCH NO: 6
+	Train Loss: 0.013 | Train Accuracy: 99.58%
+	Test Loss:  0.528 | Test Accuracy:  90.34%
+EPOCH NO: 7
+	Train Loss: 0.010 | Train Accuracy: 99.69%
+	Test Loss:  0.465 | Test Accuracy:  90.35%
+EPOCH NO: 8
+	Train Loss: 0.010 | Train Accuracy: 99.64%
+	Test Loss:  0.526 | Test Accuracy:  90.33%
+EPOCH NO: 9
+	Train Loss: 0.011 | Train Accuracy: 99.62%
+	Test Loss:  0.444 | Test Accuracy:  90.61%
+EPOCH NO: 10
+	Train Loss: 0.008 | Train Accuracy: 99.76%
+	Test Loss:  0.551 | Test Accuracy:  89.67%

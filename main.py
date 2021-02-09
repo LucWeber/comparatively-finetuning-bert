@@ -7,6 +7,7 @@ import logging
 import random
 import numpy as np
 
+from time import time
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -22,7 +23,9 @@ from utils.model_utils import train, test
 # NOTE: Run once without the line below to check if anything is wrong, here we target to eliminate
 # the message "Token indices sequence length is longer than the specified maximum sequence length"
 # since we already take care of it within the tokenize() function through fixing sequence length
-logging.getLogger('pytorch_transformers').setLevel(logging.CRITICAL)
+#logging.getLogger('pytorch_transformers').setLevel(logging.CRITICAL)
+
+start_time = time()
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print("DEVICE FOUND: %s" % DEVICE)
@@ -65,6 +68,9 @@ BETAS = (0.9, 0.999)
 BERT_WEIGHT_DECAY = 0.01
 EPS = 1e-8
 
+print('Loading model')
+
+
 # Initialize to-be-finetuned Bert model
 model = FineTunedBert(pretrained_model_name=PRETRAINED_MODEL_NAME,
                       num_pretrained_bert_layers=NUM_PRETRAINED_BERT_LAYERS,
@@ -80,6 +86,8 @@ model = FineTunedBert(pretrained_model_name=PRETRAINED_MODEL_NAME,
                       concatenate_hidden_states=CONCATENATE_HIDDEN_STATES,
                       use_gpu=True if torch.cuda.is_available() else False)
 
+print(f'Loading trainset: {time() - start_time}s')
+
 # Initialize train & test datasets
 train_dataset = IMDBDataset(input_directory='data/aclImdb/train',
                             tokenizer=model.get_tokenizer(),
@@ -88,6 +96,8 @@ train_dataset = IMDBDataset(input_directory='data/aclImdb/train',
                             truncation_method=TRUNCATION_METHOD,
                             device=DEVICE)
 
+print(f'Loading testset: {time() - start_time}s')
+
 test_dataset = IMDBDataset(input_directory='data/aclImdb/test',
                            tokenizer=model.get_tokenizer(),
                            apply_cleaning=APPLY_CLEANING,
@@ -95,11 +105,15 @@ test_dataset = IMDBDataset(input_directory='data/aclImdb/test',
                            truncation_method=TRUNCATION_METHOD,
                            device=DEVICE)
 
+print(f'creating train_loader: {time() - start_time}s')
+
 # Acquire iterators through data loaders
 train_loader = DataLoader(dataset=train_dataset,
                           batch_size=BATCH_SIZE,
                           shuffle=True,
                           num_workers=NUM_WORKERS)
+
+print(f'creating test_loader: {time() - start_time}s')
 
 test_loader = DataLoader(dataset=test_dataset,
                          batch_size=BATCH_SIZE,

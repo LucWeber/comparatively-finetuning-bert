@@ -1,0 +1,9 @@
+INFO:root:Loaded 71 learnable parameters from pretrained BERT model with 4 layer(s)
+WARNING:root:Tokenized positive reviews directory already exists!
+WARNING:root:Tokenized negative reviews directory already exists!
+WARNING:root:Tokenized positive reviews directory already exists!
+WARNING:root:Tokenized negative reviews directory already exists!
+/opt/conda/conda-bld/pytorch_1591914855613/work/torch/csrc/utils/python_arg_parser.cpp:756: UserWarning: This overload of add_ is deprecated:
+	add_(Number alpha, Tensor other)
+Consider using one of the following signatures instead:
+	add_(Tensor other, *, Number alpha)

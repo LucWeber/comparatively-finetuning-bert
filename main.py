@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader
 from pytorch_transformers import AdamW  # Adam's optimization w/ fixed weight decay
 
 from models.finetuned_models import FineTunedBert
-from utils.data_utils import IMDBDataset
+from utils.data_utils import IMDBDataset, BLiMPDataset
 from utils.model_utils import train, test
 
 # Disable unwanted warning messages from pytorch_transformers
@@ -88,6 +88,13 @@ model = FineTunedBert(pretrained_model_name=PRETRAINED_MODEL_NAME,
 
 print(f'Loading trainset: {time() - start_time}s')
 
+train_dataset = BLiMPDataset(input_directory='data/aclImdb/train',
+                            tokenizer=model.get_tokenizer(),
+                            apply_cleaning=APPLY_CLEANING,
+                            max_tokenization_length=MAX_TOKENIZATION_LENGTH,
+                            truncation_method=TRUNCATION_METHOD,
+                            device=DEVICE)
+exit()
 # Initialize train & test datasets
 train_dataset = IMDBDataset(input_directory='data/aclImdb/train',
                             tokenizer=model.get_tokenizer(),

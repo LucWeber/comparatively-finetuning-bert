@@ -54,7 +54,7 @@ def tokenize_and_encode(text, tokenizer, apply_cleaning=False, max_tokenization_
             get_data_iterators() function converts this to a Tensor under the hood
     """
     if apply_cleaning:
-        text = clean_text(text=text)
+        text = clean_text(text=text) # TODO: understand what does this do
 
     # Tokenize and encode
     tokenized_text = tokenizer.tokenize(text)
@@ -279,13 +279,6 @@ class BLiMPDataset(Dataset):
         self.data_path = input_directory
         self.data_files = [f for f in os.listdir(self.data_path)
                            if os.path.isfile(os.path.join(self.data_path, f))]
-        self.num_positive_examples = len(self.positive_files)
-        self.positive_label = 1
-        self.negative_path = os.path.join(input_directory, 'neg')
-        self.negative_files = [f for f in os.listdir(self.negative_path)
-                               if os.path.isfile(os.path.join(self.negative_path, f))]
-        self.num_negative_examples = len(self.negative_files)
-        self.negative_label = 0
 
         self.tokenizer = tokenizer
         self.apply_cleaning = apply_cleaning
@@ -302,7 +295,7 @@ class BLiMPDataset(Dataset):
 
     def mask_critical_token_BLiMP(self):
         """
-        Function to mask critical token in BLiMP-sentence
+        Function to mask token in BLiMP-sentences and save separately
         TODO: implement 'randomly_mask == False' (critical token instead of random)
         """
         path_masked = os.path.join(self.data_path, 'masked_corpora')
@@ -318,6 +311,7 @@ class BLiMPDataset(Dataset):
             except FileExistsError:
                 pass
 
+            # create masked version for all files and save separately
             for i in trange(len(self.data_files), desc='Creating masked corpora.',
                             leave=True):
                 file = self.data_files[i]
@@ -363,6 +357,7 @@ class BLiMPDataset(Dataset):
         else:
             logging.warning('Tokenized dataset directory already exists!')
 
+    '''
     def __len__(self):
         return len(self.positive_files) + len(self.negative_files)
 
@@ -381,3 +376,4 @@ class BLiMPDataset(Dataset):
             raise ValueError('Out of range index while accessing dataset')
 
         return torch.from_numpy(np.array(example)).long().to(self.device), label
+    '''

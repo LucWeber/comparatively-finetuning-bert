@@ -23,7 +23,7 @@ from utils.model_utils import train, test
 # NOTE: Run once without the line below to check if anything is wrong, here we target to eliminate
 # the message "Token indices sequence length is longer than the specified maximum sequence length"
 # since we already take care of it within the tokenize() function through fixing sequence length
-#logging.getLogger('pytorch_transformers').setLevel(logging.CRITICAL)
+# logging.getLogger('pytorch_transformers').setLevel(logging.CRITICAL)
 
 start_time = time()
 
@@ -73,7 +73,6 @@ BLiMP_DATA_DIR = '/homedtcl/lweber/project_CF_MTL-LM_and_task_space/data/BLiMP_t
 
 print('Loading model')
 
-
 # Initialize to-be-finetuned Bert model
 model = FineTunedBert(pretrained_model_name=PRETRAINED_MODEL_NAME,
                       num_pretrained_bert_layers=NUM_PRETRAINED_BERT_LAYERS,
@@ -92,11 +91,11 @@ model = FineTunedBert(pretrained_model_name=PRETRAINED_MODEL_NAME,
 print(f'Loading trainset: {time() - start_time}s')
 
 train_dataset = BLiMPDataset(input_directory=BLiMP_DATA_DIR,
-                            tokenizer=model.get_tokenizer(),
-                            apply_cleaning=APPLY_CLEANING,
-                            max_tokenization_length=MAX_TOKENIZATION_LENGTH,
-                            truncation_method=TRUNCATION_METHOD,
-                            device=DEVICE)
+                             tokenizer=model.get_tokenizer(),
+                             apply_cleaning=APPLY_CLEANING,
+                             max_tokenization_length=MAX_TOKENIZATION_LENGTH,
+                             truncation_method=TRUNCATION_METHOD,
+                             device=DEVICE)
 exit()
 # Initialize train & test datasets
 train_dataset = IMDBDataset(input_directory='data/aclImdb/train',
@@ -137,26 +136,26 @@ criterion = nn.CrossEntropyLoss()
 bert_identifiers = ['embedding', 'encoder', 'pooler']
 no_weight_decay_identifiers = ['bias', 'LayerNorm.weight']
 grouped_model_parameters = [
-        {'params': [param for name, param in model.named_parameters()
-                    if any(identifier in name for identifier in bert_identifiers) and
-                    not any(identifier_ in name for identifier_ in no_weight_decay_identifiers)],
-         'lr': BERT_LEARNING_RATE,
-         'betas': BETAS,
-         'weight_decay': BERT_WEIGHT_DECAY,
-         'eps': EPS},
-        {'params': [param for name, param in model.named_parameters()
-                    if any(identifier in name for identifier in bert_identifiers) and
-                    any(identifier_ in name for identifier_ in no_weight_decay_identifiers)],
-         'lr': BERT_LEARNING_RATE,
-         'betas': BETAS,
-         'weight_decay': 0.0,
-         'eps': EPS},
-        {'params': [param for name, param in model.named_parameters()
-                    if not any(identifier in name for identifier in bert_identifiers)],
-         'lr': CUSTOM_LEARNING_RATE,
-         'betas': BETAS,
-         'weight_decay': 0.0,
-         'eps': EPS}
+    {'params': [param for name, param in model.named_parameters()
+                if any(identifier in name for identifier in bert_identifiers) and
+                not any(identifier_ in name for identifier_ in no_weight_decay_identifiers)],
+     'lr': BERT_LEARNING_RATE,
+     'betas': BETAS,
+     'weight_decay': BERT_WEIGHT_DECAY,
+     'eps': EPS},
+    {'params': [param for name, param in model.named_parameters()
+                if any(identifier in name for identifier in bert_identifiers) and
+                any(identifier_ in name for identifier_ in no_weight_decay_identifiers)],
+     'lr': BERT_LEARNING_RATE,
+     'betas': BETAS,
+     'weight_decay': 0.0,
+     'eps': EPS},
+    {'params': [param for name, param in model.named_parameters()
+                if not any(identifier in name for identifier in bert_identifiers)],
+     'lr': CUSTOM_LEARNING_RATE,
+     'betas': BETAS,
+     'weight_decay': 0.0,
+     'eps': EPS}
 ]
 
 # Define optimizer

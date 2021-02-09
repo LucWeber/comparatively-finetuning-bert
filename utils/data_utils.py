@@ -298,16 +298,16 @@ class BLiMPDataset(Dataset):
         Function to mask token in BLiMP-sentences and save separately
         TODO: implement 'randomly_mask == False' (critical token instead of random)
         """
-        path_masked = os.path.join(self.data_path, 'masked_corpora')
+        self.data_path_masked = os.path.join(self.data_path, 'BERT_masked_corpora')
         mask_token = self.tokenizer.mask_token
         randomly_mask = True
 
-        if os.path.exists(path_masked) and len(os.listdir(path_masked)) != 0:
+        if os.path.exists(self.data_path_masked) and len(os.listdir(self.data_path_masked)) != 0:
             logging.info(f'Masked dataset already exists. To recreate, delete existing version')
             logging.info(f'Using existing version.')
         else:
             try:
-                os.mkdir(path_masked)
+                os.mkdir(self.data_path_masked)
             except FileExistsError:
                 pass
 
@@ -324,7 +324,7 @@ class BLiMPDataset(Dataset):
                         mask_idx = randint(0, len(line.split()) - 2)
                         corpus[j] = ' '.join([token if k != mask_idx else mask_token for k, token in enumerate(line.split())])
 
-                with open(os.path.join(path_masked, file), mode='w', encoding='utf8') as f:
+                with open(os.path.join(self.data_path_masked, file), mode='w', encoding='utf8') as f:
                     [f.write(line + '\n') for line in corpus]
 
     def pre_tokenize_and_encode_examples(self):
@@ -332,14 +332,14 @@ class BLiMPDataset(Dataset):
         Function to tokenize & encode examples and save the tokenized versions to a separate folder.
         This way, we won't have to perform the same tokenization and encoding ops every epoch.
         """
-        if not os.path.exists(os.path.join(self.data_path, 'tokenized_and_encoded')):
-            os.mkdir(os.path.join(self.data_path, 'tokenized_and_encoded'))
+        if not os.path.exists(os.path.join(self.data_path, 'BERT_tokenized_and_encoded')):
+            os.mkdir(os.path.join(self.data_path, 'BERT_tokenized_and_encoded'))
 
             # Clean & tokenize positive reviews
-            for i in trange(len(self.data_path), desc='Tokenizing & Encoding datasets',
+            for i in trange(len(self.data_files), desc='Tokenizing & Encoding datasets',
                             leave=True):
                 file = self.data_files[i]
-                with open(os.path.join(self.data_path, file), mode='r', encoding='utf8') as f:
+                with open(os.path.join(self.data_path_masked, file), mode='r', encoding='utf8') as f:
                     example = f.read()
 
                 # TODO: see how <eos>-token is handled + what to do about '\n'
@@ -352,7 +352,7 @@ class BLiMPDataset(Dataset):
                                               truncation_method=self.truncation_method,
                                               split_head_density=self.split_head_density)
 
-                with open(os.path.join(self.data_path, 'tokenized_and_encoded', file), mode='wb') as f:
+                with open(os.path.join(self.data_path, 'BERT_tokenized_and_encoded', file), mode='wb') as f:
                     pickle.dump(obj=example, file=f)
         else:
             logging.warning('Tokenized dataset directory already exists!')

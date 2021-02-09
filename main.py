@@ -68,6 +68,9 @@ BETAS = (0.9, 0.999)
 BERT_WEIGHT_DECAY = 0.01
 EPS = 1e-8
 
+# added:
+BLiMP_DATA_DIR = '/homedtcl/lweber/project_CF_MTL-LM_and_task_space/data/BLiMP_train_test_corpora'
+
 print('Loading model')
 
 
@@ -88,7 +91,7 @@ model = FineTunedBert(pretrained_model_name=PRETRAINED_MODEL_NAME,
 
 print(f'Loading trainset: {time() - start_time}s')
 
-train_dataset = BLiMPDataset(input_directory='data/aclImdb/train',
+train_dataset = BLiMPDataset(input_directory=BLiMP_DATA_DIR,
                             tokenizer=model.get_tokenizer(),
                             apply_cleaning=APPLY_CLEANING,
                             max_tokenization_length=MAX_TOKENIZATION_LENGTH,

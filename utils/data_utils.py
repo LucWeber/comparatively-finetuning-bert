@@ -11,6 +11,7 @@ import os
 import pickle
 import re
 import numpy as np
+from random import randint
 from tqdm import trange
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
@@ -153,6 +154,7 @@ class IMDBDataset(Dataset):
     @param (torch.device) device: 'cpu' or 'gpu', decides where to store the data tensors
 
     """
+
     def __init__(self, input_directory, tokenizer, apply_cleaning, max_tokenization_length,
                  truncation_method='head-only', split_head_density=0.5, device='cpu'):
         super(IMDBDataset).__init__()
@@ -242,7 +244,136 @@ class IMDBDataset(Dataset):
             with open(os.path.join(self.positive_path, 'tokenized_and_encoded', file), mode='rb') as f:
                 example = pickle.load(file=f)
         elif index >= self.num_positive_examples:
-            file = self.negative_files[index-self.num_positive_examples]
+            file = self.negative_files[index - self.num_positive_examples]
+            label = torch.tensor(data=self.negative_label, dtype=torch.long).to(self.device)
+            with open(os.path.join(self.negative_path, 'tokenized_and_encoded', file), mode='rb') as f:
+                example = pickle.load(file=f)
+        else:
+            raise ValueError('Out of range index while accessing dataset')
+
+        return torch.from_numpy(np.array(example)).long().to(self.device), label
+
+
+class BLiMPDataset(Dataset):
+    """
+    IMDB Dataset for easily iterating over and performing common operations.
+
+    @param (str) input_directory: path of directory where the desired data exists
+    @param (pytorch_transformers.BertTokenizer) tokenizer: tokenizer with pre-figured mappings
+    @param (bool) apply_cleaning: whether or not to perform common cleaning operations on texts;
+           note that enabling only makes sense if language of the task is English
+    @param (int) max_tokenization_length: maximum number of positional embeddings, or the sequence
+           length of an example that will be fed to BERT model (default: 512)
+    @param (str) truncation_method: method that will be applied in case the text exceeds
+           @max_tokenization_length; currently implemented methods include 'head-only', 'tail-only',
+           and 'head+tail' (default: 'head-only')
+    @param (float) split_head_density: weight on head when splitting between head and tail, only
+           applicable if @truncation_method='head+tail' (default: 0.5)
+    @param (torch.device) device: 'cpu' or 'gpu', decides where to store the data tensors
+
+    """
+
+    def __init__(self, input_directory, tokenizer, apply_cleaning, max_tokenization_length,
+                 truncation_method='head-only', split_head_density=0.5, device='cpu'):
+        super(BLiMPDataset).__init__()
+        self.data_path = input_directory
+        self.data_files = [f for f in os.listdir(self.data_path)
+                           if os.path.isfile(os.path.join(self.data_path, f))]
+        self.num_positive_examples = len(self.positive_files)
+        self.positive_label = 1
+        self.negative_path = os.path.join(input_directory, 'neg')
+        self.negative_files = [f for f in os.listdir(self.negative_path)
+                               if os.path.isfile(os.path.join(self.negative_path, f))]
+        self.num_negative_examples = len(self.negative_files)
+        self.negative_label = 0
+
+        self.tokenizer = tokenizer
+        self.apply_cleaning = apply_cleaning
+        self.max_tokenization_length = max_tokenization_length
+        self.truncation_method = truncation_method
+        self.split_head_density = split_head_density
+        self.device = device
+
+        # added:
+        self.mask_critical_token_BLiMP()
+
+        # Pre-tokenize & encode examples
+        self.pre_tokenize_and_encode_examples()
+
+    def mask_critical_token_BLiMP(self):
+        """
+        Function to mask critical token in BLiMP-sentence
+        TODO: implement 'randomly_mask == False' (critical token instead of random)
+        """
+        path_masked = os.path.join(self.data_path, 'masked_corpora')
+        mask_token = self.tokenizer.mask_token
+        randomly_mask = True
+
+        if os.path.exists(path_masked) and len(os.listdir(path_masked)) != 0:
+            logging.info(f'Masked dataset already exists. To recreate, delete existing version')
+            logging.info(f'Using existing version.')
+        else:
+            try:
+                os.mkdir(path_masked)
+            except FileExistsError:
+                pass
+
+            for i in trange(len(self.data_files), desc='Creating masked corpora.',
+                            leave=True):
+                file = self.data_files[i]
+
+                with open(os.path.join(self.data_path, file), mode='r', encoding='utf8') as f:
+                    corpus = [line for line in f]
+
+                if randomly_mask:
+                    for j, line in enumerate(corpus):
+                        mask_idx = randint(0, len(line.split()) - 2)
+                        corpus[j] = ' '.join([token if k != mask_idx else mask_token for k, token in enumerate(line.split())])
+
+                with open(os.path.join(path_masked, file), mode='w', encoding='utf8') as f:
+                    [f.write(line + '\n') for line in corpus]
+
+    def pre_tokenize_and_encode_examples(self):
+        """
+        Function to tokenize & encode examples and save the tokenized versions to a separate folder.
+        This way, we won't have to perform the same tokenization and encoding ops every epoch.
+        """
+        if not os.path.exists(os.path.join(self.data_path, 'tokenized_and_encoded')):
+            os.mkdir(os.path.join(self.data_path, 'tokenized_and_encoded'))
+
+            # Clean & tokenize positive reviews
+            for i in trange(len(self.data_path), desc='Tokenizing & Encoding datasets',
+                            leave=True):
+                file = self.data_files[i]
+                with open(os.path.join(self.data_path, file), mode='r', encoding='utf8') as f:
+                    example = f.read()
+
+                # TODO: see how <eos>-token is handled + what to do about '\n'
+
+                example = re.sub(r'\n', ' ', example)
+                example = tokenize_and_encode(text=example,
+                                              tokenizer=self.tokenizer,
+                                              apply_cleaning=self.apply_cleaning,
+                                              max_tokenization_length=self.max_tokenization_length,
+                                              truncation_method=self.truncation_method,
+                                              split_head_density=self.split_head_density)
+
+                with open(os.path.join(self.data_path, 'tokenized_and_encoded', file), mode='wb') as f:
+                    pickle.dump(obj=example, file=f)
+        else:
+            logging.warning('Tokenized dataset directory already exists!')
+
+    def __len__(self):
+        return len(self.positive_files) + len(self.negative_files)
+
+    def __getitem__(self, index):
+        if index < self.num_positive_examples:
+            file = self.positive_files[index]
+            label = torch.tensor(data=self.positive_label, dtype=torch.long).to(self.device)
+            with open(os.path.join(self.positive_path, 'tokenized_and_encoded', file), mode='rb') as f:
+                example = pickle.load(file=f)
+        elif index >= self.num_positive_examples:
+            file = self.negative_files[index - self.num_positive_examples]
             label = torch.tensor(data=self.negative_label, dtype=torch.long).to(self.device)
             with open(os.path.join(self.negative_path, 'tokenized_and_encoded', file), mode='rb') as f:
                 example = pickle.load(file=f)

@@ -12,12 +12,14 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-# !pip install pytorch_transformers
-from pytorch_transformers import AdamW  # Adam's optimization w/ fixed weight decay
+import sys
+sys.path.insert(1, '/home/lucasweber/Desktop/project_CF_MTL-LM_and_task_space/comparatively-finetuning-bert')
 
-from models.finetuned_models import FineTunedBert
+# from models.finetuned_models import FineTunedBert
 from utils.data_utils import IMDBDataset, BLiMPDataset
 from utils.model_utils import train, test
+# added :
+from transformers import BertLMHeadModel, Trainer, TrainingArguments, BertTokenizer, AdamW # Adam's optimization w/ fixed weight decay
 
 # Disable unwanted warning messages from pytorch_transformers
 # NOTE: Run once without the line below to check if anything is wrong, here we target to eliminate
@@ -70,9 +72,10 @@ EPS = 1e-8
 
 # added:
 BLiMP_DATA_DIR = '/homedtcl/lweber/project_CF_MTL-LM_and_task_space/data/BLiMP_train_test_corpora'
+BLiMP_DATA_DIR = '/home/lucasweber/Desktop/project_CF_MTL-LM_and_task_space/data/BLiMP_train_test_corpora/test'
 
 print('Loading model')
-
+'''
 # Initialize to-be-finetuned Bert model
 model = FineTunedBert(pretrained_model_name=PRETRAINED_MODEL_NAME,
                       num_pretrained_bert_layers=NUM_PRETRAINED_BERT_LAYERS,
@@ -87,15 +90,58 @@ model = FineTunedBert(pretrained_model_name=PRETRAINED_MODEL_NAME,
                       aggregate_on_cls_token=AGGREGATE_ON_CLS_TOKEN,
                       concatenate_hidden_states=CONCATENATE_HIDDEN_STATES,
                       use_gpu=True if torch.cuda.is_available() else False)
+'''
 
-print(f'Loading trainset: {time() - start_time}s')
+# added:
+model = BertLMHeadModel.from_pretrained(PRETRAINED_MODEL_NAME, is_decoder=True)
+
+tokenizer = BertTokenizer.from_pretrained(PRETRAINED_MODEL_NAME)
 
 train_dataset = BLiMPDataset(input_directory=BLiMP_DATA_DIR,
-                             tokenizer=model.get_tokenizer(),
+                             tokenizer=tokenizer,
                              apply_cleaning=APPLY_CLEANING,
                              max_tokenization_length=MAX_TOKENIZATION_LENGTH,
                              truncation_method=TRUNCATION_METHOD,
                              device=DEVICE)
+
+print(f'Loading trainset: {time() - start_time}s')
+
+training_args = TrainingArguments(
+    output_dir='./results',          # output directory
+    num_train_epochs=1,              # total # of training epochs
+    per_device_train_batch_size=16,  # batch size per device during training
+    per_device_eval_batch_size=64,   # batch size for evaluation
+    warmup_steps=500,                # number of warmup steps for learning rate scheduler
+    weight_decay=0.01,               # strength of weight decay
+    logging_dir='./logs',            # directory for storing logs
+)
+
+from transformers import DataCollatorForLanguageModeling
+
+data_collator = DataCollatorForLanguageModeling(
+    tokenizer=tokenizer)
+
+from transformers import LineByLineTextDataset
+import os
+
+dataset = LineByLineTextDataset(
+    tokenizer=tokenizer,
+    file_path=os.path.join(BLiMP_DATA_DIR, 'anaphor_agreement_train'),
+    block_size=128,
+)
+
+trainer = Trainer(
+    model=model,                         # the instantiated 🤗 Transformers model to be trained
+    args=training_args,                  # training arguments, defined above
+    train_dataset=dataset,         # training dataset
+    eval_dataset=[],            # evaluation dataset
+    data_collator=data_collator
+)
+
+trainer.train()
+trainer.save_model('./test_model_checkpoint')
+
+
 exit()
 # Initialize train & test datasets
 train_dataset = IMDBDataset(input_directory='data/aclImdb/train',

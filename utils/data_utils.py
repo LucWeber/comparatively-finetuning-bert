@@ -54,7 +54,7 @@ def tokenize_and_encode(text, tokenizer, apply_cleaning=False, max_tokenization_
             get_data_iterators() function converts this to a Tensor under the hood
     """
     if apply_cleaning:
-        text = clean_text(text=text) # TODO: understand what does this do
+        text = clean_text(text=text) # TODO: understand what this does
 
     # Tokenize and encode
     tokenized_text = tokenizer.tokenize(text)
@@ -288,7 +288,7 @@ class BLiMPDataset(Dataset):
         self.device = device
 
         # added:
-        self.mask_critical_token_BLiMP()
+        # self.mask_critical_token_BLiMP()
 
         # Pre-tokenize & encode examples
         self.pre_tokenize_and_encode_examples()
@@ -339,7 +339,7 @@ class BLiMPDataset(Dataset):
             for i in trange(len(self.data_files), desc='Tokenizing & Encoding datasets',
                             leave=True):
                 file = self.data_files[i]
-                with open(os.path.join(self.data_path_masked, file), mode='r', encoding='utf8') as f:
+                with open(os.path.join(self.data_path, file), mode='r', encoding='utf8') as f:
                     example = f.read()
 
                 # TODO: see how <eos>-token is handled + what to do about '\n'
@@ -352,28 +352,24 @@ class BLiMPDataset(Dataset):
                                               truncation_method=self.truncation_method,
                                               split_head_density=self.split_head_density)
 
+
+
                 with open(os.path.join(self.data_path, 'BERT_tokenized_and_encoded', file), mode='wb') as f:
                     pickle.dump(obj=example, file=f)
         else:
             logging.warning('Tokenized dataset directory already exists!')
 
-    '''
     def __len__(self):
-        return len(self.positive_files) + len(self.negative_files)
+        return len(self.data_files)
 
     def __getitem__(self, index):
-        if index < self.num_positive_examples:
-            file = self.positive_files[index]
-            label = torch.tensor(data=self.positive_label, dtype=torch.long).to(self.device)
-            with open(os.path.join(self.positive_path, 'tokenized_and_encoded', file), mode='rb') as f:
-                example = pickle.load(file=f)
-        elif index >= self.num_positive_examples:
-            file = self.negative_files[index - self.num_positive_examples]
-            label = torch.tensor(data=self.negative_label, dtype=torch.long).to(self.device)
-            with open(os.path.join(self.negative_path, 'tokenized_and_encoded', file), mode='rb') as f:
-                example = pickle.load(file=f)
-        else:
-            raise ValueError('Out of range index while accessing dataset')
+        file = self.data_files[index]
 
-        return torch.from_numpy(np.array(example)).long().to(self.device), label
-    '''
+        with open(os.path.join(self.data_path, 'BERT_tokenized_and_encoded', file), mode='rb') as f:
+            example = pickle.load(file=f)
+
+        data = torch.from_numpy(np.array(example)).long().to(self.device)
+
+        print(data)
+
+        return data[:-1], data[1:]

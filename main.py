@@ -72,7 +72,7 @@ EPS = 1e-8
 
 # added:
 BLiMP_DATA_DIR = '/homedtcl/lweber/project_CF_MTL-LM_and_task_space/data/BLiMP_train_test_corpora'
-BLiMP_DATA_DIR = '/home/lucasweber/Desktop/project_CF_MTL-LM_and_task_space/data/BLiMP_train_test_corpora/test'
+#BLiMP_DATA_DIR = '/home/lucasweber/Desktop/project_CF_MTL-LM_and_task_space/data/BLiMP_train_test_corpora/test'
 
 print('Loading model')
 '''
@@ -92,54 +92,81 @@ model = FineTunedBert(pretrained_model_name=PRETRAINED_MODEL_NAME,
                       use_gpu=True if torch.cuda.is_available() else False)
 '''
 
+BLiMP_phenomena = ['anaphor_agreement',
+                   'argument_structure',
+                   'binding',
+                   'control_raising',
+                   'determiner_noun_agreement',
+                   'ellipsis',
+                   'filler_gap_dependency',
+                   'irregular_forms',
+                   'island_effects',
+                   'npi_licensing',
+                   'quantifiers',
+                   's-selection',
+                   'subject_verb_agreement']
+
+n_paradigms_BLiMP = {'anaphor_agreement': 2,
+                     'argument_structure': 9,
+                     'binding': 7,
+                     'control_raising': 5,
+                     'determiner_noun_agreement': 8,
+                     'ellipsis': 2,
+                     'filler_gap_dependency': 7,
+                     'irregular_forms': 2,
+                     'island_effects': 8,
+                     'npi_licensing': 7,
+                     'quantifiers': 4,
+                     'subject_verb_agreement': 6}
+
 # added:
-model = BertLMHeadModel.from_pretrained(PRETRAINED_MODEL_NAME, is_decoder=True)
+from transformers import DataCollatorForLanguageModeling
+from transformers import LineByLineTextDataset
+import os
 
 tokenizer = BertTokenizer.from_pretrained(PRETRAINED_MODEL_NAME)
-
+"""
 train_dataset = BLiMPDataset(input_directory=BLiMP_DATA_DIR,
                              tokenizer=tokenizer,
                              apply_cleaning=APPLY_CLEANING,
                              max_tokenization_length=MAX_TOKENIZATION_LENGTH,
                              truncation_method=TRUNCATION_METHOD,
                              device=DEVICE)
-
-print(f'Loading trainset: {time() - start_time}s')
-
-training_args = TrainingArguments(
-    output_dir='./results',          # output directory
-    num_train_epochs=1,              # total # of training epochs
-    per_device_train_batch_size=16,  # batch size per device during training
-    per_device_eval_batch_size=64,   # batch size for evaluation
-    warmup_steps=500,                # number of warmup steps for learning rate scheduler
-    weight_decay=0.01,               # strength of weight decay
-    logging_dir='./logs',            # directory for storing logs
-)
-
-from transformers import DataCollatorForLanguageModeling
+"""
 
 data_collator = DataCollatorForLanguageModeling(
     tokenizer=tokenizer)
 
-from transformers import LineByLineTextDataset
-import os
+for phenomenon in BLiMP_phenomena:
+    model = BertLMHeadModel.from_pretrained(PRETRAINED_MODEL_NAME, is_decoder=True)
+    dataset = LineByLineTextDataset(
+        tokenizer=tokenizer,
+        file_path=os.path.join(BLiMP_DATA_DIR, f'{phenomenon}_train'),
+        block_size=128,
+    )
 
-dataset = LineByLineTextDataset(
-    tokenizer=tokenizer,
-    file_path=os.path.join(BLiMP_DATA_DIR, 'anaphor_agreement_train'),
-    block_size=128,
-)
+    num_epochs = int(644 / n_paradigms_BLiMP[phenomenon])
 
-trainer = Trainer(
-    model=model,                         # the instantiated 🤗 Transformers model to be trained
-    args=training_args,                  # training arguments, defined above
-    train_dataset=dataset,         # training dataset
-    eval_dataset=[],            # evaluation dataset
-    data_collator=data_collator
-)
+    training_args = TrainingArguments(
+        output_dir='./results',  # output directory
+        num_train_epochs=num_epochs,  # total # of training epochs
+        per_device_train_batch_size=64,  # batch size per device during training
+        per_device_eval_batch_size=64,  # batch size for evaluation
+        warmup_steps=500,  # number of warmup steps for learning rate scheduler
+        weight_decay=0.01,  # strength of weight decay
+        logging_dir='./logs',  # directory for storing logs
+    )
 
-trainer.train()
-trainer.save_model('./comparatively-finetuning-bert/probed_models')
+    trainer = Trainer(
+        model=model,                         # the instantiated 🤗 Transformers model to be trained
+        args=training_args,                  # training arguments, defined above
+        train_dataset=dataset,         # training dataset
+        eval_dataset=[],            # evaluation dataset
+        data_collator=data_collator
+    )
+
+    trainer.train()
+    trainer.save_model(f'./comparatively-finetuning-bert/probed_models/{phenomenon}')
 
 
 exit()

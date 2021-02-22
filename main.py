@@ -145,7 +145,7 @@ for phenomenon in BLiMP_phenomena:
         block_size=128,
     )
 
-    num_epochs = int(644 / n_paradigms_BLiMP[phenomenon])
+    num_epochs = int(40 / n_paradigms_BLiMP[phenomenon])
 
     training_args = TrainingArguments(
         output_dir='./results',  # output directory

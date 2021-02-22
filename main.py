@@ -117,7 +117,8 @@ n_paradigms_BLiMP = {'anaphor_agreement': 2,
                      'island_effects': 8,
                      'npi_licensing': 7,
                      'quantifiers': 4,
-                     'subject_verb_agreement': 6}
+                     'subject_verb_agreement': 6,
+                     's-selection': 2}
 
 # added:
 from transformers import DataCollatorForLanguageModeling
@@ -145,7 +146,7 @@ for phenomenon in BLiMP_phenomena:
         block_size=128,
     )
 
-    num_epochs = int(40 / n_paradigms_BLiMP[phenomenon])
+    num_epochs = int(60 / n_paradigms_BLiMP[phenomenon])
 
     training_args = TrainingArguments(
         output_dir='./results',  # output directory

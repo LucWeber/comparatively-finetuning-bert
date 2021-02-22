@@ -139,7 +139,7 @@ trainer = Trainer(
 )
 
 trainer.train()
-trainer.save_model('./test_model_checkpoint')
+trainer.save_model('./comparatively-finetuning-bert/probed_models')
 
 
 exit()
